@@ -9,7 +9,7 @@
   <ng-template #elseBlock>
     <div *ngIf="isMinor; else elseBrick">
      <span class="left">-</span>
-     <span class="right">{{ result2 }}</span>
+     <span class="right">{{ result }}</span>
     </div>
   </ng-template>
     <ng-template #elseBrick>
@@ -20,14 +20,14 @@
 <!--displayText文字列だから、pタグでもOKかと。-->
 
    <div class="row">
-    <button class="btn operator" (click)="onClickOperator('%')">%</button>
+    <button class="btn operator" (click)="onClickPercent('%')">%</button>
     <button class="btn number" (click)="onClickNumber('7')">7</button>
     <button class="btn number" (click)="onClickNumber('8')">8</button>
     <button class="btn number" (click)="onClickNumber('9')">9</button>
     <button class="btn operator" (click)="onClickOperator('/')">÷</button>
    </div>
    <div class="row">
-    <button class="btn operator" (click)="onClickOperator('√')">√</button>
+    <button class="btn operator" (click)="onClickSquare('√')">√</button>
     <button class="btn number" (click)="onClickNumber('4')">4</button>
     <button class="btn number" (click)="onClickNumber('5')">5</button>
     <button class="btn number" (click)="onClickNumber('6')">6</button>
