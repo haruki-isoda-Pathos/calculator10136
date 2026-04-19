@@ -15,13 +15,12 @@ curNumber2: string = "" //入力保管用(桁加工後の計算用。onClickFunc
 preNumber: string = "" //displayにマイナスが出ないようにするために噛ませるプロパティ
 prevItem: string = "" //値保管用(前項逃がし用)
 constant: string = "" //定数格納用
-baseValue: string = "" //デフォルト値格納用
 preItem: string = "" //計算コマンド用前項
 latItem: string = "" //計算コマンド用後項
 
-iniResult: string = "0" //計算結果保存用（プラスならdisplayNumberへ焼き、マイナスならdisplayMinNumberへ焼く。）
+iniResult: string = "" //計算結果保存用（プラスならdisplayNumberへ焼き、マイナスならdisplayMinNumberへ焼く。）
 displayNumber: string = "0" //表示用。result直送
-displayOverNumber: string = "0" //オバー値表示用。displayText直送
+displayOverNumber: string = "" //オバー値表示用。displayText直送
 
 operator: string = "" //演算子格納用
 
@@ -29,6 +28,7 @@ error: boolean = false
 isMinus: boolean = false //マイナス表示のためのもの。こいつがtrueだとhtml上でisMinorがtrueになる。
 operandFrag: boolean = false //状態管理フラッグ。演算子入力直後、数字入力直前ならtrue。
 pendingFrag: boolean = false //=でのデフォ値指定用。operandFrag下の数字入力完了でtrueになる。
+specialFrag: boolean = false //後項なし入力の連続計のみにつかわれるもの。
 
 onClickNumber(num: string) {
 if (this.operandFrag) {
@@ -53,10 +53,10 @@ if (this.operandFrag) {
 }
 
 limDigit(curNumber: string): string {
-  let [intPart, decimalPart = ''] = this.curNumber.split('.')
+  let [intPart, decimalPart = ''] = curNumber.split('.')
   intPart = intPart.slice(0,10)
   decimalPart = decimalPart.slice(0,8)
-  return decimalPart ? '${intPart}.${decimalPart}' : '${intPart}'
+  return decimalPart ? `${intPart}.${decimalPart}` : `${intPart}`
 }
 
 onClickFunction(min: string) { 
@@ -74,10 +74,11 @@ onClickFunction(min: string) {
 
 onClickOperator(opr: string) { 
   if (this.pendingFrag && !this.operandFrag) {
-    this.constant = this.prevItem
+    this.preItem = this.prevItem
     this.latItem = this.curNumber2
     this.iniResult = this.calculation()
     if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
+    this.prevItem = this.curNumber2
     this.curNumber2 = this.iniResult
     this.operator = opr
     return this.displayShifting()
@@ -86,7 +87,7 @@ onClickOperator(opr: string) {
     this.constant = this.prevItem
   } 
   this.operator = opr
-  this.prevItem = this.curNumber2
+  if (this.iniResult == '' && this.curNumber2 != '') { this.prevItem = this.curNumber2 }
   this.operandFrag = true
   this.curNumber = ''
   this.pendingFrag = false
@@ -101,94 +102,152 @@ onClickEquals() {  //★計算結果マイナスの時に、isMinorに送り込�
     this.latItem = this.constant
     this.iniResult = this.calculation()
     if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
+    this.curNumber2 = this.iniResult
+    this.pendingFrag = false
+    this.specialFrag = true
+    this.curNumber = ''
     return this.displayShifting()
   } 
   if (this.operandFrag && !this.pendingFrag && this.constant != '') {
     this.preItem = this.constant
     this.latItem = this.curNumber2
-    this.constant = this.curNumber2
     this.iniResult = this.calculation()
     if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
+    this.constant = this.iniResult
+    this.pendingFrag = false
+    this.curNumber = '' 
     return this.displayShifting()
   }
   if (this.operandFrag && !this.pendingFrag) {
-    if (this.constant = '') { this.constant = this.prevItem }
+    if (this.constant == '') { this.constant = this.prevItem }
     switch (this.operator) {
       case '+' : this.preItem = '0', this.latItem = this.constant
       break
       case '-' : this.preItem = this.iniResult ?? '0', this.latItem = this.constant
       break
-      case '*' : this.preItem = this.constant, this.latItem = this.curNumber2
+      case '*' : this.preItem = this.curNumber2, this.latItem = this.constant
       break
       case '/' : this.preItem = '1', this.latItem = this.curNumber2
     }
     this.iniResult = this.calculation()
     if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.curNumber2 = this.iniResult
+    this.pendingFrag = false
+    this.operandFrag = false
+    this.specialFrag = true
+    this.curNumber = ''
     return this.displayShifting()
   }
-  if (!this.operandFrag && !this.pendingFrag) {
-    this.constant = this.curNumber2
-    this.iniResult = this.constant
+  if (!this.operandFrag && !this.pendingFrag && !this.specialFrag) {
+    if (this.constant == '') { this.constant = '0' }
+    this.preItem = this.constant
+    this.latItem = this.curNumber2
+    this.iniResult = this.calculation()
     if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
+    this.pendingFrag = false
+    this.curNumber2 = this.iniResult
+    this.curNumber = ''
     return this.displayShifting()
   } 
   if (!this.operandFrag && this.pendingFrag) {
-    if (this.constant = '') { this.constant = this.prevItem }
-    this.preItem = this.constant ?? '0'
+    if (this.constant == '') { this.constant = this.curNumber2 }
+    this.preItem = this.prevItem
     this.latItem = this.curNumber2
+    this.constant = this.curNumber2
     this.iniResult = this.calculation()
     this.prevItem = this.iniResult
+    this.curNumber2 = this.iniResult
+    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
+    this.pendingFrag = false
+    this.curNumber = ''
+    return this.displayShifting()
+  }
+  if (this.specialFrag) {
+    this.preItem = this.iniResult
+    this.latItem = this.constant
+    this.iniResult = this.calculation()
     if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
     return this.displayShifting()
   }
-  this.pendingFrag = false
-  this.curNumber = ''
   return;
   }
 
 calculation(): string { 
   if (this.operator == '/' && this.latItem == '0') {
-    return '0'
-    
+    this.error = true
+    return this.displayOverNumber = '0'
+  }
+  if (this.operator == '/' && this.preItem == '1' && this.latItem == '') {
+    this.error = true 
+    return this.displayOverNumber = '0'
   }
     switch (this.operator) {
-      case '+' : return String(Number(this.preItem ?? this.constant) + Number(this.latItem ?? this.constant))
-      case '-' : return String(Number(this.preItem ?? this.constant) - Number(this.latItem ?? this.constant))
-      case '*' : return String(Number(this.preItem ?? this.constant) * Number(this.latItem ?? this.constant))
-      case '/' : return String(Number(this.preItem ?? this.constant) / Number(this.latItem ?? this.constant)) 
-      default : return ''
+      case '+' : return String(Number(this.preItem) + Number(this.latItem))
+      case '-' : return String(Number(this.preItem) - Number(this.latItem))
+      case '*' : return String(Number(this.preItem) * Number(this.latItem))
+      case '/' : return String(Number(this.preItem) / Number(this.latItem)) 
+      default : return this.curNumber2
     }
 } 
 
 onClickPercent() {
+  if (this.curNumber2 === "" ) {
+    return; 
+  }
+  if (!this.pendingFrag && this.operandFrag) {
+    return;
+  }
   if (!this.operandFrag && !this.pendingFrag) {
     this.curNumber2 = '0'
     this.prevItem = '0'
     this.displayNumber = '0'
   }   
-  if (!this.operandFrag && this.pendingFrag) {
+  if (!this.operandFrag && this.pendingFrag && this.operator != '-') {
     this.preItem = this.prevItem
     this.latItem = String(Number(this.curNumber2) * 0.01)
     this.iniResult = this.calculation()
+    this.constant = this.iniResult
+    this.curNumber2 = this.latItem
+    this.pendingFrag = false
     return this.displayShifting()
   }
-  return
+  if (!this.operandFrag && this.pendingFrag && this.operator == '-') {
+    this.preItem = this.prevItem
+    this.latItem = String(Number(this.curNumber2) * Number(this.prevItem) * 0.01)
+    this.iniResult = this.calculation()
+    this.constant = this.iniResult
+    this.operandFrag = true
+    this.pendingFrag = false
+    return this.displayShifting()
+  }
+  return;
 }
 
 onClickSquare() {
+  if (this.curNumber2 === "" ) {
+    return; 
+  }
   if (Number(this.curNumber2) >= 0 && !this.prevItem) {
     const sqrt = String(Math.sqrt(Number(this.curNumber2)))
     this.prevItem = sqrt
-    this.displayNumber = sqrt
+    this.iniResult = sqrt
+    return this.displayShifting()
   }
-  else if (Number(this.curNumber2) >= 0 && this.prevItem) {
+  else if (Number(this.curNumber2) >= 0 && this.prevItem && !this.pendingFrag) {
     const sqrt = String(Math.sqrt(Number(this.curNumber2)))
-    this.displayNumber = sqrt
+    this.iniResult = sqrt
+    return this.displayShifting()
+  }
+  else if (Number(this.curNumber2) >= 0 && this.prevItem && this.pendingFrag) {
+    const sqrt = String(Math.sqrt(Number(this.curNumber2)))
+    this.curNumber2 = sqrt
+    this.iniResult = sqrt
+    return this.displayShifting()
   }
    else if (Number(this.curNumber2) < 0){ 
-    this.displayNumber = "E        0"
-  }
+    this.error = true
+    return this.displayOverNumber = '0'
+  } 
+  return;
 }
 
 onClickCe() { 
@@ -196,6 +255,7 @@ onClickCe() {
   this.curNumber2 = ''
   this.preNumber = ''
   this.displayNumber = '' 
+  this.displayNumber = "0" 
 }
 
 onClickC() {
@@ -204,17 +264,17 @@ onClickC() {
   this.preNumber = "" 
   this.prevItem = "" 
   this.constant = "" 
-  this.baseValue = "" 
   this.preItem = "" 
   this.latItem = "" 
-  this.iniResult = "0" 
+  this.iniResult = "" 
   this.displayNumber = "0" 
-  this.displayOverNumber = "0" 
+  this.displayOverNumber = "" 
   this.operator = ""
   this.error = false
   this.isMinus = false 
   this.operandFrag = false 
   this.pendingFrag = false 
+  this.specialFrag = false
 }
 
 displayShifting() {
