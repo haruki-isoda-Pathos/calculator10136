@@ -1,23 +1,14 @@
 <div class="container" >
 <div class="calculator">
 
- <div class="display">
-  <div *ngIf="isError; else elseBlock">
-  <span class="left">E</span>
-  <span class="right">{{ displayText }}</span> 
-  </div>
-  <ng-template #elseBlock>
-    <div *ngIf="isMinor; else elseBrick">
-     <span class="left">-</span>
-     <span class="right">{{ result }}</span>
+  <div class="display">
+    <div *ngIf="isError; else elseBlock">
+    <span class="right">エラーです</span> 
     </div>
-  </ng-template>
-    <ng-template #elseBrick>
-      <span class="right">{{ result }}</span>
+    <ng-template #elseBlock>
+    <span class="right">{{ displayText }}</span>
     </ng-template>
- </div>
-
-<!--displayText文字列だから、pタグでもOKかと。-->
+   </div>
 
    <div class="row">
     <button class="btn operator" (click)="onClickPercent()">%</button>
@@ -44,7 +35,7 @@
     <button class="btn clear" (click)="onClickC()">C</button>
     <button class="btn number" (click)="onClickNumber('0')">0</button>
     <button class="btn number" (click)="onClickNumber('.')">.</button>
-    <button class="btn number error" (click)="onClickFunction('-')">+/-</button> 
+    <button class="btn number error" (click)="onClickFunction()">+/-</button> 
     <button class="btn operator" (click)="onClickOperator('+')">+</button>  
   </div>
   <div class="row">

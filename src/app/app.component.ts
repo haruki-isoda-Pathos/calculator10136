@@ -10,307 +10,237 @@ styleUrl: "./app.component.css",
 
 export class AppComponent { 
 
-curNumber: string = "" //入力保管用(桁加工前）
-curNumber2: string = "" //入力保管用(桁加工後の計算用。onClickFunctionの便宜上必要)　
-preNumber: string = "" //displayにマイナスが出ないようにするために噛ませるプロパティ
-prevItem: string = "" //値保管用(前項逃がし用)
-constant: string = "" //定数格納用
-preItem: string = "" //計算コマンド用前項
-latItem: string = "" //計算コマンド用後項
+displayNumber: string = '0' //表示用
+numberA: string = '' //桁加工前
+numberB: string = '' //桁加工後（計算用）
+numberC: string = '' //前項待避用
+operator: string = '' //演算子格納用
+preNum: string = '' //前項
+latNum: string = '' //後項
+result: string = '' //計算結果保存用←不要論。
 
-iniResult: string = "" //計算結果保存用（プラスならdisplayNumberへ焼き、マイナスならdisplayMinNumberへ焼く。）
-displayNumber: string = "0" //表示用。result直送
-displayOverNumber: string = "" //オバー値表示用。displayText直送
-
-operator: string = "" //演算子格納用
-
-error: boolean = false
-isMinus: boolean = false //マイナス表示のためのもの。こいつがtrueだとhtml上でisMinorがtrueになる。
-operandFrag: boolean = false //状態管理フラッグ。演算子入力直後、数字入力直前ならtrue。
-pendingFrag: boolean = false //=でのデフォ値指定用。operandFrag下の数字入力完了でtrueになる。
-specialFrag: boolean = false //後項なし入力の連続計のみにつかわれるもの。
+dif: boolean = false//＊３＊＝と２＋３ー（５）＝　区別フラッグ
+pending: boolean = false //演算子後フラッグ
+endCalc: boolean = false //＝後フラッグ
+error: boolean = false //エラーフラッグ
+accomp: boolean = false //後項入力終了フラッグ
+methOne: boolean = false // 連続演算用フラッグ
+methTwo: boolean = false //連続演算用フラッグ
+methThree: boolean = false //連続演算用フラッグ
 
 onClickNumber(num: string) {
-if (this.operandFrag) {
-  this.error = false
-  this.isMinus = false
-  this.curNumber += num 
-  if (!this.curNumber.includes(".") && num == '.') { this.curNumber += '.' }
-  this.curNumber2 = this.limDigit(this.curNumber)
-  this.preNumber = this.curNumber2
-  this.displayNumber = this.preNumber
-  this.operandFrag = false
-  this.pendingFrag = true
-} else {
-  this.error = false
-  this.isMinus = false
-  this.curNumber += num
-  if (!this.curNumber.includes(".") && num == '.') { this.curNumber += '.' }
-  this.curNumber2 = this.limDigit(this.curNumber)
-  this.preNumber = this.curNumber2
-  this.displayNumber = this.preNumber
-}
+  if (this.operator == '') {this.dif = true}
+  this.methOne = false
+  this.methTwo = false 
+  this.methThree = false
+  if (this.endCalc) {
+    this.numberC = this.displayNumber
+    this.endCalc = false
+  }
+  this.numberA += num
+  if (!this.numberA.includes(".") && num == '.') { this.numberA += '.' }
+  this.numberB = this.digitMod(this.numberA)
+  this.displayNumber = this.numberB
+  if (this.operator != '') {this.accomp = true}
 }
 
-limDigit(curNumber: string): string {
+digitMod(curNumber: string): string {
   let [intPart, decimalPart = ''] = curNumber.split('.')
   intPart = intPart.slice(0,10)
   decimalPart = decimalPart.slice(0,8)
   return decimalPart ? `${intPart}.${decimalPart}` : `${intPart}`
 }
 
-onClickFunction(min: string) { 
-  //isMinus=true(htmlにマイナスを返す)シナリオは3つ。計算結果がマイナス1。数字の後の―ボタン2。―ボタンを最初に単独で押した場合3
-  if (min === '-' && this.curNumber2 !== '') { //パターン２
-    this.isMinus = !this.isMinus 
-    this.curNumber2 = String(Number(this.curNumber2) * -1) //計算用の値のみマイナスに。
-    if (!this.pendingFrag) { this.prevItem = this.curNumber2}
-  } else if (min === '-') { //パターン３
-    this.isMinus = !this.isMinus
-  } else {
-    this.isMinus = false
-  }
-}
-
-onClickOperator(opr: string) { 
-  if (this.pendingFrag && !this.operandFrag) {
-    this.preItem = this.prevItem
-    this.latItem = this.curNumber2
-    this.iniResult = this.calculation()
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.prevItem = this.curNumber2
-    this.curNumber2 = this.iniResult
+onClickOperator(opr: string) {
+  this.methOne = false
+  this.methTwo = false
+  this.methThree = false
+  if (this.numberB == '') {
     this.operator = opr
-    return this.displayShifting()
-  } 
-  if (!this.pendingFrag && this.operandFrag) {
-    this.constant = this.prevItem
-  } 
-  this.operator = opr
-  if (this.iniResult == '' && this.curNumber2 != '') { this.prevItem = this.curNumber2 }
-  this.operandFrag = true
-  this.curNumber = ''
-  this.pendingFrag = false
-  return
+    return
   }
-
-onClickEquals() {  //★計算結果マイナスの時に、isMinorに送り込む設定ができていない。
-  this.isMinus = false
-  if (!this.operandFrag && this.pendingFrag && this.prevItem == '') {
-    this.constant = this.curNumber2
-    this.preItem = '0'
-    this.latItem = this.constant
-    this.iniResult = this.calculation()
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.curNumber2 = this.iniResult
-    this.pendingFrag = false
-    this.specialFrag = true
-    this.curNumber = ''
-    return this.displayShifting()
-  } 
-  if (this.operandFrag && !this.pendingFrag && this.constant != '') {
-    this.preItem = this.constant
-    this.latItem = this.curNumber2
-    this.iniResult = this.calculation()
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.constant = this.iniResult
-    this.pendingFrag = false
-    this.curNumber = '' 
-    return this.displayShifting()
+  if (this.operator != '' && this.accomp) {
+    this.onClickEquals()
+    this.methOne = false
+    this.methTwo = true
+    this.operator = opr
+    this.pending = true
+    this.numberA = ''
+    if (this.numberC == '') {this.numberC = this.displayNumber}
+    this.endCalc = true
+  } else {
+    if (!this.endCalc) {this.numberC = this.displayNumber}
+    this.operator = opr
+    this.pending = true
+    this.numberA = ''
+    if (this.endCalc) {this.methTwo = true}
   }
-  if (this.operandFrag && !this.pendingFrag) {
-    if (this.constant == '') { this.constant = this.prevItem }
-    switch (this.operator) {
-      case '+' : this.preItem = '0', this.latItem = this.constant
-      break
-      case '-' : this.preItem = this.iniResult ?? '0', this.latItem = this.constant
-      break
-      case '*' : this.preItem = this.curNumber2, this.latItem = this.constant
-      break
-      case '/' : this.preItem = '1', this.latItem = this.curNumber2
-    }
-    this.iniResult = this.calculation()
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.pendingFrag = false
-    this.operandFrag = false
-    this.specialFrag = true
-    this.curNumber = ''
-    return this.displayShifting()
-  }
-  if (!this.operandFrag && !this.pendingFrag && !this.specialFrag) {
-    if (this.constant == '') { this.constant = '0' }
-    this.preItem = this.constant
-    this.latItem = this.curNumber2
-    this.iniResult = this.calculation()
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.pendingFrag = false
-    this.curNumber2 = this.iniResult
-    this.curNumber = ''
-    return this.displayShifting()
-  } 
-  if (!this.operandFrag && this.pendingFrag) {
-    if (this.constant == '') { this.constant = this.curNumber2 }
-    this.preItem = this.prevItem
-    this.latItem = this.curNumber2
-    this.constant = this.curNumber2
-    this.iniResult = this.calculation()
-    this.prevItem = this.iniResult
-    this.curNumber2 = this.iniResult
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    this.pendingFrag = false
-    this.curNumber = ''
-    return this.displayShifting()
-  }
-  if (this.specialFrag) {
-    this.preItem = this.iniResult
-    this.latItem = this.constant
-    this.iniResult = this.calculation()
-    if (Number(this.iniResult) < 0) { this.isMinus = true } else { this.isMinus = false }
-    return this.displayShifting()
-  }
-  return;
-  }
-
-calculation(): string { 
-  if (this.operator == '/' && this.latItem == '0') {
-    this.error = true
-    return this.displayOverNumber = '0'
-  }
-  if (this.operator == '/' && this.preItem == '1' && this.latItem == '') {
-    this.error = true 
-    return this.displayOverNumber = '0'
-  }
-    switch (this.operator) {
-      case '+' : return String(Number(this.preItem) + Number(this.latItem))
-      case '-' : return String(Number(this.preItem) - Number(this.latItem))
-      case '*' : return String(Number(this.preItem) * Number(this.latItem))
-      case '/' : return String(Number(this.preItem) / Number(this.latItem)) 
-      default : return this.curNumber2
-    }
-} 
-
-onClickPercent() {
-  if (this.curNumber2 === "" ) {
-    return; 
-  }
-  if (!this.pendingFrag && this.operandFrag) {
-    return;
-  }
-  if (!this.operandFrag && !this.pendingFrag) {
-    this.curNumber2 = '0'
-    this.prevItem = '0'
-    this.displayNumber = '0'
-  }   
-  if (!this.operandFrag && this.pendingFrag && this.operator != '-') {
-    this.preItem = this.prevItem
-    this.latItem = String(Number(this.curNumber2) * 0.01)
-    this.iniResult = this.calculation()
-    this.constant = this.iniResult
-    this.curNumber2 = this.latItem
-    this.pendingFrag = false
-    return this.displayShifting()
-  }
-  if (!this.operandFrag && this.pendingFrag && this.operator == '-') {
-    this.preItem = this.prevItem
-    this.latItem = String(Number(this.curNumber2) * Number(this.prevItem) * 0.01)
-    this.iniResult = this.calculation()
-    this.constant = this.iniResult
-    this.operandFrag = true
-    this.pendingFrag = false
-    return this.displayShifting()
-  }
-  return;
 }
 
-onClickSquare() {
-  if (this.curNumber2 === "" ) {
-    return; 
-  }
-  if (Number(this.curNumber2) >= 0 && !this.prevItem) {
-    const sqrt = String(Math.sqrt(Number(this.curNumber2)))
-    this.prevItem = sqrt
-    this.iniResult = sqrt
-    return this.displayShifting()
-  }
-  else if (Number(this.curNumber2) >= 0 && this.prevItem && !this.pendingFrag) {
-    const sqrt = String(Math.sqrt(Number(this.curNumber2)))
-    this.iniResult = sqrt
-    return this.displayShifting()
-  }
-  else if (Number(this.curNumber2) >= 0 && this.prevItem && this.pendingFrag) {
-    const sqrt = String(Math.sqrt(Number(this.curNumber2)))
-    this.curNumber2 = sqrt
-    this.iniResult = sqrt
-    return this.displayShifting()
-  }
-   else if (Number(this.curNumber2) < 0){ 
-    this.error = true
-    return this.displayOverNumber = '0'
+onClickEquals() {
+  this.numberA = ''
+  this.endCalc = true
+  if (this.operator == '') { 
+    this.pending = false
+    this.accomp = false
+    return 
   } 
-  return;
+  if (this.methOne) {
+    this.calcMethodOne()
+    this.displayNumber = this.calculation()
+    this.pending = false
+    this.accomp = false
+    return this.displayNumber
+  }
+  if (this.methTwo) {
+    this.numberC = this.displayNumber
+    this.calcMethodTwo()
+    this.displayNumber = this.calculation()
+    this.pending = false
+    this.accomp = false
+    if (this.dif) {
+      this.methTwo = false
+      this.methThree = true
+    }
+    return this.displayNumber
+  }
+  if (this.methThree) {
+    this.calcMethodThree()
+    this.displayNumber = this.calculation()
+    this.pending = false
+    this.accomp = false
+    return this.displayNumber
+  }
+  if (this.numberC != '' && !this.accomp) {
+    switch (this.operator) {
+      case '+' : this.preNum = '0', this.latNum = this.numberB
+      break
+      case '-' : this.preNum = '0', this.latNum = this.numberB
+      break
+      case '*' : this.preNum = this.numberB, this.latNum = this.numberB
+      break
+      case '/' : this.preNum = '1', this.latNum = this.numberB
+      }
+  this.methOne = true
+  this.displayNumber = this.calculation()
+  this.pending = false
+  this.accomp = false
+  return this.displayNumber
+  } 
+  if (this.numberC == '' && this.accomp) {
+    this.preNum = '0'
+    this.latNum = this.numberB
+    this.displayNumber = this.calculation()
+    this.methOne = true
+    this.pending = false
+    this.accomp = false
+  return this.displayNumber
+  }
+  else {
+    this.calcMethodDef()
+    this.displayNumber = this.calculation()
+    this.methOne = true
+    this.pending = false
+    this.accomp = false
+  return this.displayNumber
+  }
 }
 
-onClickCe() { 
-  this.curNumber = ''
-  this.curNumber2 = ''
-  this.preNumber = ''
-  this.displayNumber = '' 
-  this.displayNumber = "0" 
+calcMethodDef() {
+  this.preNum = this.numberC
+  this.latNum = this.displayNumber
+}
+
+calcMethodOne() {
+  this.preNum = this.displayNumber
+  this.latNum = this.numberB 
+}
+
+calcMethodTwo() {
+  this.preNum = this.numberB
+  this.latNum = this.displayNumber 
+}
+
+calcMethodThree() {
+  this.preNum = this.displayNumber
+  this.latNum = this.numberC
+}
+
+calculation () {
+  if (this.operator == '/' && (this.latNum == '' || this.latNum == '0')) {
+      this.error = true
+    }
+    if (this.operator == '/' && this.preNum == '1' && this.latNum == '') {
+      this.error = true 
+    }
+      switch (this.operator) {
+        case '+' : return String(Number(this.preNum) + Number(this.latNum))
+        case '-' : return String(Number(this.preNum) - Number(this.latNum))
+        case '*' : return String(Number(this.preNum) * Number(this.latNum))
+        case '/' : return String(Number(this.preNum) / Number(this.latNum)) 
+        default : return this.numberB
+      }
+}
+
+onClickFunction() {
+  this.displayNumber = String(Number(this.displayNumber) * -1) 
+  if (this.pending && !this.endCalc) {
+    this.numberC = String(Number(this.numberC) * -1)
+  }
+}
+
+onClickCe() {
+ this.displayNumber = '0'
+ this.numberA = ''
+ this.numberB = ''
 }
 
 onClickC() {
-  this.curNumber = ""
-  this.curNumber2 = "" 
-  this.preNumber = "" 
-  this.prevItem = "" 
-  this.constant = "" 
-  this.preItem = "" 
-  this.latItem = "" 
-  this.iniResult = "" 
-  this.displayNumber = "0" 
-  this.displayOverNumber = "" 
-  this.operator = ""
-  this.error = false
-  this.isMinus = false 
-  this.operandFrag = false 
-  this.pendingFrag = false 
-  this.specialFrag = false
+  this.displayNumber = '0' //表示用
+  this.numberA = '' //桁加工前
+  this.numberB = '' //桁加工後（計算用）
+  this.numberC = '' //前項待避用
+  this.operator = '' //演算子格納用
+  this.preNum = '' //前項
+  this.latNum = '' //後項
+  this.result = '' //計算結果保存用
+  
+  this.dif = false
+  this.pending = false
+  this.endCalc = false 
+  this.error = false 
+  this.accomp = false 
+  this.methOne = false 
+  this.methTwo = false 
+  this.methThree = false
 }
 
-displayShifting() {
-  if (Number(this.iniResult) >= 10000000000) {
+errorProperty() {
+ if (Number(this.displayNumber) >= 10000000000) {
+  this.error = true
+ } 
+ if (this.displayNumber.includes('.')) {
+  const dig = this.displayNumber.split('.')[1]
+  if (dig.length > 8) {
     this.error = true
-    const intCount = Math.abs(Number(this.iniResult)).toString().split('.')[0].length//桁割する際のマニュアルを作成。一応Math.absで絶対値化。小数点で分割（なくてもよい）し、配列の最初を取得。
-    const display = String(Number(this.iniResult) / 10**(intCount - 1)) //小数点の位置指定があるので、割り算は桁マニュアル。（prevNumber2は入力制御にかからないなら、小数点も含めて何ケタにでもなりえる。（1000000000000.355とか））
-    const displayNumber = Number(display)
-    const factor = 10 ** 8
-    const truncated = Math.floor(displayNumber * factor) / factor //規定桁以下を切り捨てる。
-    const ans = truncated.toFixed(8) //小数点表示を8ケタまで強制する。
-    this.displayOverNumber = ans
-    return this.displayOverNumber
-  } else {
-    const displayNumber = Math.abs(Number(this.iniResult))
-    const factor = 10 ** 8
-    const ans = Math.floor(displayNumber * factor) / factor
-    return this.displayNumber = String(ans)
   }
-}
-
-get result(): string {
-  return this.displayNumber
+ }
+ if (Number(this.displayNumber) <= 10000000000) {
+  this.error = true
+ }
 }
 
 get displayText(): string {
-  return this.displayOverNumber
+  return this.displayNumber
 } 
 
 get isError(): boolean { 
   return this.error
 }
 
-get isMinor(): boolean { 
-  return this.isMinus 
-}
+onClickPercent() {}
+
+onClickSquare() {}
 
 }
 
