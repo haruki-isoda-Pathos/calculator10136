@@ -74,18 +74,15 @@ onClickOperator(opr: string) {
     this.operator = opr
     this.pending = true
     this.numberA = ''
-    if (this.endCalc) {
-      this.methTwo = true
-    }
   }
 }
 
 onClickEquals() {
   this.numberA = ''
-  this.endCalc = true
   if (this.operator == '') { 
     this.pending = false
     this.accomp = false
+    this.endCalc = true
     return 
   } 
   if (this.methOne) {
@@ -94,6 +91,7 @@ onClickEquals() {
     this.errorProperty()
     this.pending = false
     this.accomp = false
+    this.endCalc = true
     return this.displayNumber
   }
   if (this.methTwo) {
@@ -107,6 +105,7 @@ onClickEquals() {
       this.methTwo = false
       this.methThree = true
     }
+    this.endCalc = true
     return this.displayNumber
   }
   if (this.methThree) {
@@ -115,9 +114,10 @@ onClickEquals() {
     this.errorProperty()
     this.pending = false
     this.accomp = false
+    this.endCalc = true
     return this.displayNumber
   }
-  if (this.numberC != '' && !this.accomp) {
+  if (this.numberC != '' && !this.accomp && !this.endCalc) {
     switch (this.operator) {
       case '+' : this.preNum = '0', this.latNum = this.numberB
       break
@@ -132,6 +132,7 @@ onClickEquals() {
   this.errorProperty()
   this.pending = false
   this.accomp = false
+  this.endCalc = true
   return this.displayNumber
   } 
   if (this.numberC == '' && this.accomp) {
@@ -142,6 +143,7 @@ onClickEquals() {
     this.methOne = true
     this.pending = false
     this.accomp = false
+    this.endCalc = true
   return this.displayNumber
   }
   else {
@@ -151,6 +153,7 @@ onClickEquals() {
     this.methOne = true
     this.pending = false
     this.accomp = false
+    this.endCalc = true
   return this.displayNumber
   }
 }
