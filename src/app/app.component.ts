@@ -182,18 +182,25 @@ calculation () {
     if (this.operator == '/' && this.preNum == '1' && this.latNum == '') {
       this.error = true 
     }
+
+  let result: number
       switch (this.operator) {
-        case '+' : return String(Number(this.preNum) + Number(this.latNum))
-        case '-' : return String(Number(this.preNum) - Number(this.latNum))
-        case '*' : return String(Number(this.preNum) * Number(this.latNum))
-        case '/' : return String(Number(this.preNum) / Number(this.latNum)) 
+        case '+' : result = Number(this.preNum) + Number(this.latNum); break
+        case '-' : result = Number(this.preNum) - Number(this.latNum); break
+        case '*' : result = Number(this.preNum) * Number(this.latNum); break
+        case '/' : result = Number(this.preNum) / Number(this.latNum); break
         default : return this.numberB
       }
+   return this.roundResult(result)
+}
+
+roundResult(num: number): string {
+  return String(Math.round(num * 1e9) / 1e9)
 }
 
 onClickFunction() {
   this.displayNumber = String(Number(this.displayNumber) * -1) 
-  if (this.pending && !this.endCalc) {
+  if (this.pending && !this.accomp) {
     this.numberC = String(Number(this.numberC) * -1)
   }
 }
