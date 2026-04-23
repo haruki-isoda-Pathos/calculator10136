@@ -20,9 +20,8 @@ latNum: string = '' //後項
 result: string = '' //計算結果保存用←不要論。
 
 dif: boolean = false//＊３＊＝と２＋３ー（５）＝　区別フラッグ
-dif2: boolean = false //３＋４－とー＝区別フラッグ。
 pending: boolean = false //演算子後フラッグ
-endCalc: boolean = false //＝後フラッグ
+endCalc: boolean = false //＝後フラッ
 error: boolean = false //エラーフラッグ
 accomp: boolean = false //後項入力終了フラッグ
 methOne: boolean = false // 連続演算用フラッグ
@@ -150,6 +149,7 @@ onClickEquals() {
     this.calcMethodDef()
     this.displayNumber = this.calculation()
     this.errorProperty()
+    this.numberC = this.numberB
     this.methOne = true
     this.pending = false
     this.accomp = false
