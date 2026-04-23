@@ -20,6 +20,7 @@ latNum: string = '' //後項
 result: string = '' //計算結果保存用←不要論。
 
 dif: boolean = false//＊３＊＝と２＋３ー（５）＝　区別フラッグ
+dif2: boolean = false //３＋４－とー＝区別フラッグ。
 pending: boolean = false //演算子後フラッグ
 endCalc: boolean = false //＝後フラッグ
 error: boolean = false //エラーフラッグ
@@ -73,7 +74,9 @@ onClickOperator(opr: string) {
     this.operator = opr
     this.pending = true
     this.numberA = ''
-    if (this.endCalc) {this.methTwo = true}
+    if (this.endCalc) {
+      this.methTwo = true
+    }
   }
 }
 
@@ -88,6 +91,7 @@ onClickEquals() {
   if (this.methOne) {
     this.calcMethodOne()
     this.displayNumber = this.calculation()
+    this.errorProperty()
     this.pending = false
     this.accomp = false
     return this.displayNumber
@@ -96,6 +100,7 @@ onClickEquals() {
     this.numberC = this.displayNumber
     this.calcMethodTwo()
     this.displayNumber = this.calculation()
+    this.errorProperty()
     this.pending = false
     this.accomp = false
     if (this.dif) {
@@ -107,6 +112,7 @@ onClickEquals() {
   if (this.methThree) {
     this.calcMethodThree()
     this.displayNumber = this.calculation()
+    this.errorProperty()
     this.pending = false
     this.accomp = false
     return this.displayNumber
@@ -123,6 +129,7 @@ onClickEquals() {
       }
   this.methOne = true
   this.displayNumber = this.calculation()
+  this.errorProperty()
   this.pending = false
   this.accomp = false
   return this.displayNumber
@@ -131,6 +138,7 @@ onClickEquals() {
     this.preNum = '0'
     this.latNum = this.numberB
     this.displayNumber = this.calculation()
+    this.errorProperty()
     this.methOne = true
     this.pending = false
     this.accomp = false
@@ -139,6 +147,7 @@ onClickEquals() {
   else {
     this.calcMethodDef()
     this.displayNumber = this.calculation()
+    this.errorProperty()
     this.methOne = true
     this.pending = false
     this.accomp = false
@@ -224,9 +233,6 @@ errorProperty() {
   if (dig.length > 8) {
     this.error = true
   }
- }
- if (Number(this.displayNumber) <= 10000000000) {
-  this.error = true
  }
 }
 
